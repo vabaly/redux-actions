@@ -1,70 +1,48 @@
-# redux-actions
+# Redux Actions 学习笔记
 
-[![Build Status](https://travis-ci.org/redux-utilities/redux-actions.svg?branch=master)](https://travis-ci.org/redux-utilities/redux-actions)
-[![codecov](https://codecov.io/gh/redux-utilities/redux-actions/branch/master/graph/badge.svg)](https://codecov.io/gh/redux-utilities/redux-actions)
-[![npm](https://img.shields.io/npm/v/redux-actions.svg)](https://www.npmjs.com/package/redux-actions)
-[![npm](https://img.shields.io/npm/dm/redux-actions.svg)](https://www.npmjs.com/package/redux-actions)
+名词：
 
-> [Flux Standard Action](https://github.com/acdlite/flux-standard-action) utilities for Redux
+- `action creator`，也称 `action` 创建函数
+- 
 
-### Table of Contents
+## Redux Actions 解决什么问题
 
-- [Getting Started](#getting-started)
-  - [Installation](#installation)
-  - [Usage](#usage)
-- [Documentation](#documentation)
+根本是解决写 `Redux` 代码非常啰嗦的问题。
 
-# Getting Started
+1. 创建 `Action` 变得简单
+2. `Action` 本身符合 `FSA` 规范
+3. 处理 `Action` 的代码也变得简单
+4. 不用总写 `type`、`switch...case` 等重复的代码。
+5. 不用再写一堆常量了，直接字符串一次性传给 `createAction` 就可以了
 
-## Installation
+## Redux Actions 使用方式
 
-```bash
-$ npm install --save redux-actions
-```
+### 创建 `Action`
 
-or
+首先，我们要明白，一个 `Action` 的本质是一个对象，类似于 `{ type, payload }` 这样一个对象。以前我们创建它会先定义一个创建函数，然后在 `dispatch` 时，执行这个函数，并把函数返回值作为 `dispatch` 的参数。同理，`creatAction` 也是返回一个创建函数，所以在 `dispatch` 时，也要先执行这个返回的函数，这一点完全一样。另一个所有约束但也基本相同的点是，创建函数的参数是 `payload` 的值。
 
-```bash
-$ yarn add redux-actions
-```
+这里仿佛没有减少多少代码，不过还是多多少少减少了些，而且遵循 `FSA` 规范：
 
-The [npm](https://www.npmjs.com) package provides a [CommonJS](http://webpack.github.io/docs/commonjs.html) build for use in Node.js, and with bundlers like [Webpack](http://webpack.github.io/) and [Browserify](http://browserify.org/). It also includes an [ES modules](http://jsmodules.io/) build that works well with [Rollup](http://rollupjs.org/) and [Webpack2](https://webpack.js.org)'s tree-shaking.
+1. 不用写 `type` 了，直接在 `createAction` 中传个参数就是 `type`
+2. 不用写参数，然后再 `return` 一个对象了，直接约定俗成返回一个对象，参数在调用创建函数时传递也会默认被接收。
 
-The [UMD](https://unpkg.com/redux-actions@latest/dist) build exports a global called `window.ReduxActions` if you add it to your page via a `<script>` tag. We _don’t_ recommend UMD builds for any serious application, as most of the libraries complementary to Redux are only available on [npm](https://www.npmjs.com/search?q=redux).
+使用 `createActions` 时，返回的对象的键是类型的驼峰式命名。
 
-## Usage
+仅当使用 `createActions` 时，可以配置每个 `action` `type` 的前缀，以及类型和前缀的连接符。
 
-```js
-import { createActions, handleActions, combineActions } from 'redux-actions';
+### `Action` 对应的对 `state` 的处理
 
-const defaultState = { counter: 10 };
+与以前的写法不同，`handleAction` 或者 `handleActions` 不再根据 `type` 来识别 `action`，而是直接根据 `action` 创建函数来识别，所以你不再对 `reducer` 所在的地方传一个常量，又对 `dispatch` 所在的地方传一个 `action` 创建函数，而是统一传 `action` 创建函数，这是第一个优点。
 
-const { increment, decrement } = createActions({
-  INCREMENT: (amount = 1) => ({ amount }),
-  DECREMENT: (amount = 1) => ({ amount: -amount })
-});
+第二个优点是，`handleAction` 使用位置参数解耦 `action` 的辨别和逻辑， `handleActions` 使用 `key` `value` 来接耦这两者，逻辑部分都抽象成一个独立的函数，可以自由的在任何地方定义这段逻辑，而不是一堆 `switch...case`。
 
-const reducer = handleActions(
-  {
-    [combineActions(increment, decrement)]: (
-      state,
-      { payload: { amount } }
-    ) => {
-      return { ...state, counter: state.counter + amount };
-    }
-  },
-  defaultState
-);
+多个 `action` 如果具有相同修改 `state` 的逻辑，可以用 `combineActions(action1, action2, ...)` 作为 `key`，类似于多行在一起的 `case`。
 
-export default reducer;
-```
+## 从 Redux Actions 设计总结的规范
 
-[See the full API documentation.](https://redux-actions.js.org/)
+- 调用 `action` 创建函数时，传入数据（`payload`）的处理在创建函数内部进行，即 `payloadCreator` 中进行，而不是到 `reducer` 后再处理，`reducer` 主要负责对 `state` 的修改，仅仅是一个数据的赋值过程。
 
-## Documentation
+## Redux Actions 和 Redux Saga 的区别
 
-- [Introduction](https://redux-actions.js.org/introduction)
-- [API](https://redux-actions.js.org/api)
-- [External Resources](https://redux-actions.js.org/externalresources)
-- [Changelog](https://redux-actions.js.org/changelog)
-- [Contributors](https://github.com/redux-utilities/redux-actions/graphs/contributors)
+- `Redux Actions` 处理的（也可以理解为监听的） `action` 都是要同步修改 `state` 的 `action`，而 `Redux Saga` 监听的 `action` 都仅仅是触发异步任务而已，不直接修改 `state`。所以二者角色不一样。例如 `Redux Saga` 监听到了 `Action` 拉取数据后，一定会触发另一个 `Action 被 `Redux Actions` 的 `handleAction(s)` 给处理。
+- `Redux Saga` 监听的 `Action` `type` 仍然需要用常量定义，而 `Action` 创建函数需要用 `Redux Action` 来定义，并且要把前面定义的常量传给他，最终使用 `dispatch` 来触发 `Redux Saga` 的监听。

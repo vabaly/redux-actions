@@ -2,7 +2,11 @@
 
 redux-actions is handy all by itself, however, its real power comes when you combine it with middleware.
 
+`redux-actions` 本身就很方便，但是，当你将其与其他中间件结合使用时，它的真正功能便会显现出来。
+
 The identity form of `createAction` is a great way to create a single action creator that handles multiple payload types. For example, using [redux-promise](https://github.com/redux-utilities/redux-promise) and [redux-rx](https://github.com/acdlite/redux-rx):
+
+`createAction` 函数是创建一个处理各种各样的数据的 `action` 创建函数的好方法。 例如，使用[redux-promise](https://github.com/redux-utilities/redux-promise)和[redux-rx](https://github.com/acdlite/redux-rx)：
 
 ```js
 const addTodo = createAction('ADD_TODO');
